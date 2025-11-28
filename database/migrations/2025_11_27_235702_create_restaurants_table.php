@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('latitude', 10, 8); 
             $table->decimal('longitude', 11, 8);
             $table->json('cuisine_types'); 
-            $table->json('photos'); 
+            $table->json('photos');
             $table->decimal('average_rating', 3, 1)->default(0); 
             $table->integer('total_reviews')->default(0);
             $table->timestamps(); 

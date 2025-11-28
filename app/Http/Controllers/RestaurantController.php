@@ -58,7 +58,7 @@ class RestaurantController extends Controller
         return view('restaurants.create', compact('cuisineTypes'));
     }
 
-    public function store(Request $request)
+      public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
@@ -68,12 +68,14 @@ class RestaurantController extends Controller
             'longitude' => 'required|numeric',
             'cuisine_types' => 'required|array|min:1',
             'cuisine_types.*' => 'string|max:50',
-            'photos' => 'required|array|min:1|max:10',
-            'photos.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120'
+            'photos' => 'sometimes|array|max:10', // Alterado para 'sometimes'
+            'photos.*' => 'sometimes|image|mimes:jpeg,png,jpg,gif,webp|max:5120' // Alterado para 'sometimes'
         ]);
 
         try {
             $uploadedPhotos = [];
+            
+            // FOTOS SÃO OPCIONAIS - só processa se existirem
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $photo) {
                     $uploadResult = Cloudinary::upload($photo->getRealPath(), [
@@ -84,6 +86,12 @@ class RestaurantController extends Controller
                         'public_id' => $uploadResult->getPublicId()
                     ];
                 }
+            } else {
+                // Se não há fotos, usa um placeholder
+                $uploadedPhotos[] = [
+                    'url' => 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80',
+                    'public_id' => 'restaurant_placeholder'
+                ];
             }
 
             $restaurant = Restaurant::create([
@@ -98,10 +106,12 @@ class RestaurantController extends Controller
                 'total_reviews' => 0
             ]);
 
+            // Sincronizar com Firebase
             $restaurant->syncWithFirebase();
 
             return redirect()->route('restaurants.map')
-                ->with('success', 'Restaurante cadastrado com sucesso! Agora ele aparece no mapa.');
+                ->with('success', 'Restaurante cadastrado com sucesso!' . 
+                    (empty($request->photos) ? ' Você pode adicionar fotos depois.' : ''));
 
         } catch (\Exception $e) {
             return redirect()->back()
@@ -109,7 +119,6 @@ class RestaurantController extends Controller
                 ->withInput();
         }
     }
-
     
     public function show($id)
     {

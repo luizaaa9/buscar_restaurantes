@@ -51,41 +51,7 @@
                 </div>
             </div>
 
-            <!-- Estatísticas -->
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="card text-center bg-primary text-white">
-                        <div class="card-body">
-                            <h4 class="card-title">{{ $restaurants->count() }}</h4>
-                            <p class="card-text mb-0">Total de Restaurantes</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-center bg-success text-white">
-                        <div class="card-body">
-                            <h4 class="card-title">{{ $restaurants->where('average_rating', '>=', 4)->count() }}</h4>
-                            <p class="card-text mb-0">Excelente (4+ estrelas)</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-center bg-warning text-white">
-                        <div class="card-body">
-                            <h4 class="card-title">{{ $restaurants->whereBetween('average_rating', [3, 3.9])->count() }}</h4>
-                            <p class="card-text mb-0">Bom (3-4 estrelas)</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card text-center bg-info text-white">
-                        <div class="card-body">
-                            <h4 class="card-title">{{ $restaurants->where('total_reviews', '>', 0)->count() }}</h4>
-                            <p class="card-text mb-0">Com Avaliações</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            
 
             <!-- Informações de Resultados -->
             @if(request()->has('query') || request()->has('cuisine'))
