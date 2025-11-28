@@ -1,0 +1,32 @@
+/* Leaflet CSS - Import via CDN */
+@import 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+
+
+.leaflet-container {
+    font-family: inherit;
+    z-index: 1;
+}
+
+.custom-marker {
+    background: transparent;
+    border: none;
+}
+.leaflet-default-icon-path {
+    background-image: url(https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png);
+}
+
+.leaflet-default-shadow-path {
+    background-image: url(https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png);
+}
+
+.star-rating { 
+    color: #ffc107; 
+}
+
+.restaurant-card { 
+    transition: transform 0.2s; 
+}
+
+.restaurant-card:hover { 
+    transform: translateY(-5px); 
+}
