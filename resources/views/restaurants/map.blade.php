@@ -4,21 +4,22 @@
 
 @section('content')
 <div class="container-fluid px-0">
-    <div class="row">
-            <div id="vue-app">
-                <restaurant-map 
-                    :restaurants='@json($restaurantsData)'
-                ></restaurant-map>
-            </div>
-        </div>
+    <div class="restaurant-map-container">
+        <restaurant-map 
+            :restaurants='@json($restaurants)'
+            initial-lat="{{ $initialLat ?? -23.5505 }}"
+            initial-lng="{{ $initialLng ?? -46.6333 }}"
+            initial-zoom="{{ $initialZoom ?? 12 }}"
+        ></restaurant-map>
     </div>
 </div>
 @endsection
 
-@push('scripts')
-<script src="{{ mix('js/app.js') }}"></script>
-<script>
-console.log('Restaurantes passados para Vue:', @json($restaurantsData));
-console.log('Elemento vue-app:', document.getElementById('vue-app'));
-</script>
+@push('styles')
+<style>
+.restaurant-map-container {
+    min-height: calc(100vh - 200px);
+    background: var(--black);
+}
+</style>
 @endpush

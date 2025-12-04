@@ -4,36 +4,50 @@
 
 @section('content')
 <div class="container">
-    <div class="row">
+    <div class="row mb-5">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>
-                    <i class="fas fa-utensils"></i> 
-                    Todos os Restaurantes
-                </h1>
                 <div>
-                    <a href="{{ route('restaurants.map') }}" class="btn btn-outline-primary me-2">
+                    <h1 class="display-6 fw-bold text-burgundy mb-2">
+                        <i class="fas fa-utensils me-2"></i> 
+                        Todos os Restaurantes
+                    </h1>
+                    <p class="text-muted">Explore nossa seleção de restaurantes cadastrados</p>
+                </div>
+                <div>
+                    <a href="{{ route('restaurants.map') }}" class="btn btn-outline-burgundy me-2">
                         <i class="fas fa-map-marked-alt"></i> Ver Mapa
                     </a>
-                    <a href="{{ route('restaurants.create') }}" class="btn btn-primary">
-                        <i class="fas fa-plus"></i> Cadastrar Restaurante
+                    <a href="{{ route('restaurants.create') }}" class="btn btn-burgundy">
+                        <i class="fas fa-plus"></i> Cadastrar
                     </a>
                 </div>
             </div>
 
-            <!-- Filtros e Busca -->
-            <div class="card mb-4">
+            <div class="card border-0 shadow-lg mb-4">
+                <div class="card-header bg-dark-gray border-bottom-0 py-4">
+                    <h5 class="mb-0 text-white">
+                        <i class="fas fa-search me-2"></i>Buscar Restaurantes
+                    </h5>
+                </div>
                 <div class="card-body">
                     <form action="{{ route('restaurants.search') }}" method="GET">
-                        <div class="row g-3">
+                        <div class="row g-3 align-items-end">
                             <div class="col-md-6">
-                                <input type="text" name="query" class="form-control" 
-                                       placeholder="Buscar por nome, descrição ou endereço..." 
-                                       value="{{ request('query') }}">
+                                <label class="form-label fw-semibold">Buscar por:</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-dark-gray border-dark">
+                                        <i class="fas fa-search text-burgundy"></i>
+                                    </span>
+                                    <input type="text" name="query" class="form-control border-dark" 
+                                           placeholder="Nome, descrição ou endereço..." 
+                                           value="{{ request('query') }}">
+                                </div>
                             </div>
                             <div class="col-md-4">
-                                <select name="cuisine" class="form-select">
-                                    <option value="">Todos os tipos de cozinha</option>
+                                <label class="form-label fw-semibold">Tipo de Cozinha:</label>
+                                <select name="cuisine" class="form-select border-dark">
+                                    <option value="">Todos os tipos</option>
                                     @foreach(['Brasileira', 'Italiana', 'Japonesa', 'Mexicana', 'Chinesa', 'Árabe', 'Francesa', 'Vegetariana', 'Vegana', 'Frutos do Mar'] as $cuisine)
                                         <option value="{{ $cuisine }}" {{ request('cuisine') == $cuisine ? 'selected' : '' }}>
                                             {{ $cuisine }}
@@ -42,8 +56,8 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-search"></i> Buscar
+                                <button type="submit" class="btn btn-burgundy w-100 h-100">
+                                    <i class="fas fa-search me-1"></i> Buscar
                                 </button>
                             </div>
                         </div>
@@ -51,114 +65,109 @@
                 </div>
             </div>
 
-            
-
-            <!-- Informações de Resultados -->
             @if(request()->has('query') || request()->has('cuisine'))
-            <div class="alert alert-info mb-4">
-                <i class="fas fa-info-circle me-2"></i>
-                @if(request('query') && request('cuisine'))
-                    Mostrando resultados para "{{ request('query') }}" e cozinha "{{ request('cuisine') }}"
-                @elseif(request('query'))
-                    Mostrando resultados para "{{ request('query') }}"
-                @elseif(request('cuisine'))
-                    Mostrando resultados para cozinha "{{ request('cuisine') }}"
-                @endif
-                <a href="{{ route('restaurants.index') }}" class="float-end">
-                    <i class="fas fa-times"></i> Limpar filtros
-                </a>
+            <div class="alert alert-dark border-burgundy mb-4">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <i class="fas fa-filter me-2 text-burgundy"></i>
+                        @if(request('query') && request('cuisine'))
+                            Filtros ativos: "{{ request('query') }}" e cozinha "{{ request('cuisine') }}"
+                        @elseif(request('query'))
+                            Buscando por: "{{ request('query') }}"
+                        @elseif(request('cuisine'))
+                            Filtrando por cozinha: "{{ request('cuisine') }}"
+                        @endif
+                    </div>
+                    <a href="{{ route('restaurants.index') }}" class="btn btn-sm btn-outline-burgundy">
+                        <i class="fas fa-times me-1"></i> Limpar
+                    </a>
+                </div>
             </div>
             @endif
 
-            <!-- Lista de Restaurantes -->
-            <div class="row">
-                @forelse($restaurants as $restaurant)
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card restaurant-card h-100">
-                        @if(!empty($restaurant->photos) && count($restaurant->photos) > 0)
-                        <img src="{{ $restaurant->photos[0]['url'] }}" class="card-img-top" 
-                             alt="{{ $restaurant->name }}" style="height: 200px; object-fit: cover;">
-                        @else
-                        <div class="card-img-top bg-light d-flex align-items-center justify-content-center" 
-                             style="height: 200px;">
-                            <i class="fas fa-utensils fa-3x text-muted"></i>
+            @if($restaurants->count() > 0)
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                @foreach($restaurants as $restaurant)
+                <div class="col">
+                    <div class="card restaurant-card h-100 border-0 shadow-sm">
+                        <div class="position-relative">
+                            @if(!empty($restaurant->photos) && count($restaurant->photos) > 0)
+                            <img src="{{ $restaurant->photos[0]['url'] }}" class="card-img-top" 
+                                 alt="{{ $restaurant->name }}" style="height: 200px; object-fit: cover;">
+                            @else
+                            <div class="card-img-top bg-dark-gray d-flex align-items-center justify-content-center" 
+                                 style="height: 200px;">
+                                <i class="fas fa-utensils fa-4x text-medium-gray"></i>
+                            </div>
+                            @endif
+                            
+                            <div class="position-absolute top-0 end-0 m-3">
+                                <span class="badge bg-burgundy px-3 py-2">
+                                    {{ number_format($restaurant->average_rating, 1) }}
+                                    <i class="fas fa-star ms-1"></i>
+                                </span>
+                            </div>
                         </div>
-                        @endif
                         
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">{{ $restaurant->name }}</h5>
+                            <h5 class="card-title fw-bold text-white mb-2">{{ $restaurant->name }}</h5>
                             
-                            <div class="mb-2">
-                                @for($i = 1; $i <= 5; $i++)
-                                    <i class="fas fa-star {{ $i <= $restaurant->average_rating ? 'text-warning' : 'text-muted' }}"></i>
-                                @endfor
-                                <small class="text-muted ms-1">
-                                    {{ number_format($restaurant->average_rating, 1) }} ({{ $restaurant->total_reviews }} avaliações)
-                                </small>
+                            <div class="mb-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="me-2">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            <i class="fas fa-star {{ $i <= $restaurant->average_rating ? 'text-warning' : 'text-medium-gray' }}"></i>
+                                        @endfor
+                                    </div>
+                                    <small class="text-muted">({{ $restaurant->total_reviews }} avaliações)</small>
+                                </div>
+                                <p class="card-text text-light-gray small mb-3">{{ Str::limit($restaurant->description, 80) }}</p>
                             </div>
 
-                            <p class="card-text flex-grow-1">{{ Str::limit($restaurant->description, 100) }}</p>
-
-                            <div class="mb-2">
-                                @foreach(array_slice($restaurant->cuisine_types, 0, 3) as $type)
-                                    <span class="badge bg-secondary me-1 mb-1">{{ $type }}</span>
+                            <div class="mb-3">
+                                @foreach(array_slice($restaurant->cuisine_types, 0, 2) as $type)
+                                    <span class="badge bg-medium-gray text-light-gray me-1 mb-1">{{ $type }}</span>
                                 @endforeach
-                                @if(count($restaurant->cuisine_types) > 3)
-                                    <span class="badge bg-light text-dark">+{{ count($restaurant->cuisine_types) - 3 }}</span>
+                                @if(count($restaurant->cuisine_types) > 2)
+                                    <span class="badge bg-dark-gray text-light-gray">+{{ count($restaurant->cuisine_types) - 2 }}</span>
                                 @endif
                             </div>
 
-                            <p class="card-text">
-                                <small class="text-muted">
-                                    <i class="fas fa-map-marker-alt"></i> 
-                                    {{ Str::limit($restaurant->address, 50) }}
-                                </small>
-                            </p>
-
                             <div class="mt-auto">
-                                <div class="d-grid gap-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">
+                                        <i class="fas fa-map-marker-alt me-1 text-burgundy"></i> 
+                                        {{ Str::limit($restaurant->address, 25) }}
+                                    </small>
                                     <a href="{{ route('restaurants.show', $restaurant->id) }}" 
-                                       class="btn btn-outline-primary btn-sm">
-                                        <i class="fas fa-eye"></i> Ver Detalhes
+                                       class="btn btn-sm btn-outline-burgundy">
+                                        <i class="fas fa-eye me-1"></i> Ver
                                     </a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                @empty
-                <div class="col-12">
-                    <div class="text-center py-5">
-                        <i class="fas fa-utensils fa-4x text-muted mb-3"></i>
-                        <h3 class="text-muted">Nenhum restaurante encontrado</h3>
-                        <p class="text-muted">
-                            @if(request()->has('query') || request()->has('cuisine'))
-                                Tente ajustar os filtros de busca.
-                            @else
-                                Seja o primeiro a cadastrar um restaurante!
-                            @endif
-                        </p>
-                        <a href="{{ route('restaurants.create') }}" class="btn btn-primary btn-lg">
-                            <i class="fas fa-plus"></i> Cadastrar Primeiro Restaurante
-                        </a>
-                    </div>
-                </div>
-                @endforelse
+                @endforeach
             </div>
-
-            <!-- Paginação (REMOVER POR ENQUANTO) -->
-            {{-- 
-            @if($restaurants->hasPages())
-            <div class="row mt-4">
-                <div class="col-12">
-                    <nav aria-label="Page navigation">
-                        {{ $restaurants->links() }}
-                    </nav>
+            @else
+            <div class="text-center py-5">
+                <div class="empty-state">
+                    <i class="fas fa-utensils fa-5x text-medium-gray mb-4"></i>
+                    <h3 class="text-light-gray mb-3">Nenhum restaurante encontrado</h3>
+                    <p class="text-muted mb-4">
+                        @if(request()->has('query') || request()->has('cuisine'))
+                            Tente ajustar os filtros de busca.
+                        @else
+                            Seja o primeiro a cadastrar um restaurante!
+                        @endif
+                    </p>
+                    <a href="{{ route('restaurants.create') }}" class="btn btn-burgundy btn-lg">
+                        <i class="fas fa-plus me-2"></i> Cadastrar Primeiro Restaurante
+                    </a>
                 </div>
             </div>
-            @endif 
-            --}}
-
+            @endif
         </div>
     </div>
 </div>
@@ -167,22 +176,44 @@
 @push('styles')
 <style>
 .restaurant-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    border: none;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    background: var(--dark-gray);
+    border: 1px solid var(--medium-gray);
 }
 
 .restaurant-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(128, 0, 32, 0.15) !important;
+    border-color: var(--burgundy);
 }
 
 .card-img-top {
     border-radius: 8px 8px 0 0;
 }
 
-.badge {
-    font-size: 0.75em;
+.bg-dark-gray {
+    background-color: var(--dark-gray) !important;
+}
+
+.bg-medium-gray {
+    background-color: var(--medium-gray) !important;
+}
+
+.text-medium-gray {
+    color: var(--medium-gray) !important;
+}
+
+.text-light-gray {
+    color: var(--light-gray) !important;
+}
+
+.empty-state {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 3rem;
+    background: var(--dark-gray);
+    border-radius: 12px;
+    border: 2px dashed var(--medium-gray);
 }
 </style>
 @endpush
