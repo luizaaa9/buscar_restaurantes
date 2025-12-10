@@ -194,21 +194,7 @@
                             </div>
                         </div>
 
-                        <div class="alert alert-dark border-start border-3 border-burgundy mt-4">
-                            <div class="d-flex">
-                                <i class="fas fa-lightbulb text-burgundy fa-2x me-3"></i>
-                                <div>
-                                    <h6 class="alert-heading mb-2">Dicas para um cadastro perfeito:</h6>
-                                    <ul class="mb-0 small text-muted">
-                                        <li>Use um nome claro e atrativo</li>
-                                        <li>Descreva bem o ambiente e especialidades</li>
-                                        <li>Selecione todos os tipos de cozinha servidos</li>
-                                        <li>Verifique se a localização está correta no mapa</li>
-                                        <li>Fotos ajudam muito a atrair clientes!</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
+                        
 
                         <div class="d-flex justify-content-between align-items-center pt-4 border-top border-dark">
                             <div>

@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Restaurant extends Model
 {
@@ -24,93 +25,39 @@ class Restaurant extends Model
     protected $casts = [
         'cuisine_types' => 'array',
         'photos' => 'array',
+        'latitude' => 'decimal:8',
+        'longitude' => 'decimal:8',
         'average_rating' => 'decimal:1',
-        'total_reviews' => 'integer'
     ];
 
-    public function getCuisineTypesAttribute($value)
-    {
-        return json_decode($value, true) ?? [];
-    }
+   public function reviews()
+{
+    return $this->hasMany(Review::class);
+}
 
-    public function setCuisineTypesAttribute($value)
-    {
-        $this->attributes['cuisine_types'] = json_encode($value);
-    }
-
-    public function getPhotosAttribute($value)
-    {
-        return json_decode($value, true) ?? [];
-    }
-
-    public function setPhotosAttribute($value)
-    {
-        $this->attributes['photos'] = json_encode($value);
-    }
-
-    public function getReviewsFromFirebase()
-    {
-        try {
-            $firestore = app('firebase.firestore')->database();
-            $reviews = $firestore->collection('reviews')
-                ->where('restaurant_id', '==', (string)$this->id)
-                ->orderBy('created_at', 'DESC')
-                ->documents();
-
-            $reviewsData = [];
-            foreach ($reviews as $review) {
-                if ($review->exists()) {
-                    $reviewsData[] = $review->data();
-                }
-            }
-
-            return $reviewsData;
-        } catch (\Exception $e) {
-            \Log::error('Erro ao buscar reviews do Firebase: ' . $e->getMessage());
-            return [];
-        }
-    }
-
-    public function calculateAverageRating()
-    {
-        try {
-            $reviews = $this->getReviewsFromFirebase();
-            
-            if (empty($reviews)) {
-                return [
-                    'average_rating' => 0,
-                    'total_reviews' => 0
-                ];
-            }
-
-            $totalRating = 0;
-            foreach ($reviews as $review) {
-                $totalRating += $review['rating'] ?? 0;
-            }
-
-            $averageRating = round($totalRating / count($reviews), 1);
-
-            return [
-                'average_rating' => $averageRating,
-                'total_reviews' => count($reviews)
-            ];
-        } catch (\Exception $e) {
-            \Log::error('Erro ao calcular rating: ' . $e->getMessage());
-            return [
-                'average_rating' => 0,
-                'total_reviews' => 0
-            ];
-        }
-    }
     public function updateRatingStats()
     {
-        $stats = $this->calculateAverageRating();
-        
-        $this->update([
-            'average_rating' => $stats['average_rating'],
-            'total_reviews' => $stats['total_reviews']
-        ]);
-
-        return $stats;
+        $this->total_reviews = $this->reviews()->count();
+        $this->average_rating = $this->reviews()->avg('rating') ?? 0;
+        $this->save();
     }
+
+    public function storePhoto($file)
+    {
+        $path = $file->store('restaurants/photos', 'public');
+        return [
+            'url' => Storage::url($path),
+            'path' => $path,
+            'filename' => $file->getClientOriginalName()
+        ];
+    }
+
+    public function deletePhoto($path)
+    {
+        if (Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
+        }
+    }
+
+    
 }

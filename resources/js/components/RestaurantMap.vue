@@ -315,39 +315,28 @@ export default {
       return filtered;
     }
   },
-  async mounted() {
-    await this.loadLeaflet();
+  mounted() {
     this.initMap();
-    this.addRestaurantsToMap();
   },
   watch: {
     filteredRestaurants() {
-      if (this.L && this.map) {
-        this.updateMapMarkers();
-      }
+      this.updateMapMarkers();
     }
   },
   methods: {
-    async loadLeaflet() {
+    async initMap() {
       try {
-        const leaflet = await import('leaflet');
-        this.L = leaflet.default;
+        if (window.L) {
+          this.L = window.L;
+        } else {
+          await this.loadLeaflet();
+        }
         
-        delete this.L.Icon.Default.prototype._getIconUrl;
-        this.L.Icon.Default.mergeOptions({
-          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-        });
-      } catch (error) {
-        console.error('Erro ao carregar Leaflet:', error);
-      }
-    },
+        if (!this.L) {
+          console.error('Leaflet não carregado');
+          return;
+        }
 
-    initMap() {
-      if (!this.L) return;
-
-      try {
         this.map = this.L.map(this.$refs.mapContainer).setView([this.initialLat, this.initialLng], this.initialZoom);
 
         this.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -356,44 +345,94 @@ export default {
         }).addTo(this.map);
 
         this.mapLoaded = true;
+        
+        setTimeout(() => {
+          this.addRestaurantsToMap();
+        }, 100);
+
       } catch (error) {
         console.error('Erro ao inicializar mapa:', error);
+        this.mapLoaded = true;
       }
+    },
+
+    async loadLeaflet() {
+      return new Promise((resolve, reject) => {
+        if (window.L) {
+          this.L = window.L;
+          resolve();
+          return;
+        }
+
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        script.onload = () => {
+          this.L = window.L;
+          resolve();
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
     },
 
     addRestaurantsToMap() {
       if (!this.L || !this.map) return;
 
-      this.markers.forEach(marker => this.map.removeLayer(marker));
-      this.markers = [];
-
-      this.filteredRestaurants.forEach(restaurant => {
-        try {
-          if (!restaurant.latitude || !restaurant.longitude) return;
-
-          const customIcon = this.L.divIcon({
-            html: this.getMarkerHtml(restaurant),
-            iconSize: [45, 45],
-            iconAnchor: [22, 45],
-            className: 'custom-marker'
-          });
-
-          const marker = this.L.marker([restaurant.latitude, restaurant.longitude], { 
-            icon: customIcon 
-          }).addTo(this.map);
-
-          marker.on('click', () => {
-            this.selectedRestaurant = restaurant;
-          });
-
-          this.markers.push(marker);
-
-        } catch (error) {
-          console.error('Erro ao adicionar marcador:', error, restaurant);
+      this.markers.forEach(marker => {
+        if (marker && this.map) {
+          this.map.removeLayer(marker);
         }
       });
+      this.markers = [];
 
-      if (this.filteredRestaurants.length > 0 && this.markers.length > 0) {
+      if (this.filteredRestaurants.length === 0) {
+        return;
+      }
+
+      this.filteredRestaurants.forEach(restaurant => {
+        if (!restaurant.latitude || !restaurant.longitude) return;
+
+        const lat = parseFloat(restaurant.latitude);
+        const lng = parseFloat(restaurant.longitude);
+        
+        if (isNaN(lat) || isNaN(lng)) return;
+
+        const marker = this.L.marker([lat, lng]).addTo(this.map);
+
+        const popupContent = `
+          <div class="map-popup">
+            <h6 class="fw-bold mb-1">${restaurant.name}</h6>
+            <div class="rating-small mb-2">
+              ${this.getStarRatingHTML(restaurant.average_rating)}
+              <span class="text-muted ms-1">${restaurant.average_rating.toFixed(1)}</span>
+            </div>
+            <p class="mb-2 small">${restaurant.address.substring(0, 50)}...</p>
+            <div class="d-flex flex-wrap gap-1 mb-2">
+              ${restaurant.cuisine_types.slice(0, 3).map(cuisine => 
+                `<span class="badge" style="background-color: ${this.getCuisineColor(cuisine)}; color: white; font-size: 10px;">${cuisine}</span>`
+              ).join('')}
+            </div>
+            <a href="/restaurants/${restaurant.id}" class="btn btn-sm btn-burgundy w-100">
+              Ver Detalhes
+            </a>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+
+        marker.on('click', () => {
+          this.selectedRestaurant = restaurant;
+        });
+
+        this.markers.push(marker);
+      });
+
+      if (this.markers.length > 0) {
         try {
           const group = this.L.featureGroup(this.markers);
           this.map.fitBounds(group.getBounds().pad(0.1));
@@ -403,26 +442,22 @@ export default {
       }
     },
 
-    updateMapMarkers() {
-      this.addRestaurantsToMap();
+    getStarRatingHTML(rating) {
+      let html = '';
+      for (let i = 1; i <= 5; i++) {
+        if (i <= Math.floor(rating)) {
+          html += '<i class="fas fa-star text-warning" style="font-size: 12px;"></i>';
+        } else if (i - 0.5 <= rating) {
+          html += '<i class="fas fa-star-half-alt text-warning" style="font-size: 12px;"></i>';
+        } else {
+          html += '<i class="far fa-star text-muted" style="font-size: 12px;"></i>';
+        }
+      }
+      return html;
     },
 
-    getMarkerHtml(restaurant) {
-      const rating = restaurant.average_rating || 0;
-      const ratingColor = rating >= 4 ? '#28a745' : rating >= 3 ? '#ffc107' : '#dc3545';
-      
-      return `
-        <div class="custom-marker-container">
-          <div class="marker-pin">
-            <div class="marker-content">
-              <div class="rating-badge" style="background-color: ${ratingColor}">
-                ${rating.toFixed(1)}
-              </div>
-              <div class="marker-icon text-burgundy">🍽️</div>
-            </div>
-          </div>
-        </div>
-      `;
+    updateMapMarkers() {
+      this.addRestaurantsToMap();
     },
 
     getCuisineColor(cuisine) {
@@ -432,16 +467,25 @@ export default {
     focusOnRestaurant(restaurant) {
       this.selectedRestaurant = restaurant;
       if (this.map && restaurant.latitude && restaurant.longitude) {
-        this.map.setView([restaurant.latitude, restaurant.longitude], 16);
+        const lat = parseFloat(restaurant.latitude);
+        const lng = parseFloat(restaurant.longitude);
+        this.map.setView([lat, lng], 16);
+        
+        this.markers.forEach(marker => {
+          const markerLatLng = marker.getLatLng();
+          if (markerLatLng.lat === lat && markerLatLng.lng === lng) {
+            marker.openPopup();
+          }
+        });
       }
     },
 
     loadRestaurants() {
       this.loading = true;
       setTimeout(() => {
-        this.addRestaurantsToMap();
+        this.updateMapMarkers();
         this.loading = false;
-      }, 800);
+      }, 500);
     },
 
     closeModal() {
@@ -657,52 +701,40 @@ export default {
   background: #600018;
 }
 
-:deep(.custom-marker) {
-  background: transparent;
-  border: none;
+:deep(.leaflet-popup-content-wrapper) {
+  background: var(--dark-gray);
+  color: var(--light-gray);
+  border-radius: 8px;
+  border: 1px solid var(--burgundy);
 }
 
-:deep(.custom-marker-container) {
-  position: relative;
+:deep(.leaflet-popup-content) {
+  margin: 12px;
+  font-family: inherit;
+}
+
+:deep(.leaflet-popup-tip) {
+  background: var(--dark-gray);
+}
+
+:deep(.map-popup) {
+  min-width: 250px;
+}
+
+:deep(.map-popup .btn-burgundy) {
+  background-color: var(--burgundy);
+  border-color: var(--burgundy);
+  color: white;
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+:deep(.leaflet-marker-icon) {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
-:deep(.marker-pin) {
-  position: relative;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-:deep(.marker-pin:hover) {
-  transform: scale(1.1);
-}
-
-:deep(.marker-content) {
-  position: relative;
-  text-align: center;
-}
-
-:deep(.rating-badge) {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  color: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  font-size: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  z-index: 1000;
-  border: 2px solid white;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-:deep(.marker-icon) {
-  font-size: 28px;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+:deep(.leaflet-marker-icon:hover) {
+  filter: drop-shadow(0 2px 8px rgba(128, 0, 32, 0.5));
 }
 
 @media (max-width: 768px) {
